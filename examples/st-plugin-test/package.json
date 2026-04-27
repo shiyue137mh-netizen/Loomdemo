@@ -1,0 +1,14 @@
+{
+  "name": "@loom-example/st-plugin-test",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@loom/core": "workspace:*",
+    "@loom/st": "workspace:*",
+    "@loom/stdlib": "workspace:*"
+  }
+}

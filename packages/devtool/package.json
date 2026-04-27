@@ -1,0 +1,17 @@
+{
+  "name": "@loom/devtool",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "boxen": "^8.0.1",
+    "chalk": "^5.4.1",
+    "cli-table3": "^0.6.5",
+    "string-width": "^7.2.0",
+    "@loom/core": "workspace:*"
+  }
+}
