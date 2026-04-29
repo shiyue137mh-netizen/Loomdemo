@@ -1,5 +1,19 @@
 # Loom ADR Candidates (post-PoC)
 
+> **Status: 已全部裁决 (2026-04-29)**
+> 七个候选已分别 promote 为 ADR-001 ~ ADR-007，详见 [`adr/README.md`](./adr/README.md)。
+> 本文件保留作为候选阶段的历史快照与决策溯源；正式决策以 ADR 文件为准。
+>
+> | 候选 | 最终 ADR | 决策方向 |
+> | --- | --- | --- |
+> | C-001 | [ADR-001](./adr/ADR-001-stackid-trust-model.md) | A 路线（软标识） |
+> | C-002 | [ADR-002](./adr/ADR-002-trace-default-mutation-only.md) | **新增 D+A 组合**（mutation-only 默认开 + snapshot 默认 off） |
+> | C-003 | [ADR-003](./adr/ADR-003-rpc-namespace-enforcement.md) | B 精简版（命名空间强制 + 冲突校验，不引入 consumes 鉴权） |
+> | C-004 | [ADR-004](./adr/ADR-004-pass-write-soft-ownership.md) | **新增 C 路线**（owner 不阻拦 + 越权写 Diagnostic） |
+> | C-005 | [ADR-005](./adr/ADR-005-pass-registry-factory.md) | A 路线（采纳 Spike 工厂化方案） |
+> | C-006 | [ADR-006](./adr/ADR-006-capability-validation-as-stdlib-linter.md) | **新增 C 路线**（校验下沉到 Stdlib 作为 lint 工具） |
+> | C-007 | [ADR-007](./adr/ADR-007-remove-resolve-barrier.md) | B 路线（移除 barrier，Pipeline 回归纯同步） |
+
 ## ADR-C-001: stackId 的信任模型
 - **背景**: studio-poc 的 transport 不校验 client 自报的 stackId
 - **现象**: trace 里 stackId 是 audit string，但架构文档把它当作 first-class identity

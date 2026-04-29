@@ -21,5 +21,6 @@ Loom 的设计与决策文档库。
 - [Loom PoC 收口行动 (Hardening Brief)](./03-poc-archive/loom-poc-hardening-brief.md)
 
 ## 04. 下一步决策与验证 (Next Steps)
-- [ADR 候选清单 (ADR Candidates)](./04-next-steps/loom-adr-candidates.md) - PoC 结束后提炼出的、待正式版裁决的核心架构决策。
+- [**ADRs (Accepted)**](./04-next-steps/adr/README.md) - PoC 收尾后裁决落地的七个架构决策记录（ADR-001 ~ ADR-007）。
+- [ADR 候选清单 (ADR Candidates)](./04-next-steps/loom-adr-candidates.md) - 候选阶段的历史快照与决策溯源（已全部 promote 为 ADR）。
 - [回归测试种子 (Regression Questions)](./04-next-steps/loom-poc-questions.md) - 正式版开发时必须考虑的各种边缘情况和测试用例集。
