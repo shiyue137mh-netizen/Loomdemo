@@ -162,7 +162,7 @@ interface Fragment {
                    │
                    ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  Resolve 阶段（引擎内建，不是用户 Pass）                       │
+│  Resolve Barrier (显式声明的屏障)                                │
 │                                                             │
 │    按最终顺序遍历 fragment：                                 │
 │      1. 应用 meta.sets → scope                              │
@@ -181,8 +181,8 @@ interface Fragment {
 **关键规则**：
 
 1. **只有 Source 和 Resolve 接触模板语义**。Compile Pass 只改结构，不改内容。
-2. **Resolve 是引擎阶段，不是用户 Pass**。它是 `pipeline.run()` 内建的固定步骤，位于所有用户 Pass 之后、Emit 之前。
-3. **Resolve 的顺序 = fragment 的最终顺序**。这就是为什么 setvar 语义是"后覆盖前"。
+2. **Resolve 是显式 phase barrier**。它不再是引擎内建的最后一步，而是可以在流水线中间显式插入的一个屏障，用于强制对懒加载的 content 进行求值。
+3. **Resolve 的顺序 = fragment 的求值顺序**。这就是为什么 setvar 语义是"后覆盖前"。
 
 ---
 

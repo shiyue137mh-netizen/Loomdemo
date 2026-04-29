@@ -1,4 +1,7 @@
-# Loom Studio — PoC Plan
+# Loom Studio PoC Plan
+
+> **Status: Sealed**
+> 本文件已封存。后续工作见 `loom-poc-hardening-brief.md` → `loom-adr-candidates.md`
 
 **Status**: Draft v0.1 — discussion document, not an implementation contract.
 **Companion**: `docs/loom-studio-architecture.md` v0.3

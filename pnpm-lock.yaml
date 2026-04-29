@@ -153,6 +153,9 @@ importers:
       '@loom/devtool':
         specifier: workspace:*
         version: link:../devtool
+      '@loom/st':
+        specifier: workspace:*
+        version: link:../st
       '@loom/stdlib':
         specifier: workspace:*
         version: link:../stdlib

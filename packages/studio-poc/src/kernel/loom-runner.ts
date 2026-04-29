@@ -10,7 +10,7 @@ export interface Invoker {
 }
 
 export interface RunParams {
-  passes: (Pass<any> | string)[]; // Allow pass names for PoC Stage 0
+  passes: (Pass<any> | string | { name: string; params?: any })[]; // Allow pass names and configs for PoC Stage 0
   fragments: ResolvedFragment<any>[];
   invoker: Invoker;
   options?: RunOptions & { traceId?: string };
@@ -32,7 +32,13 @@ export class LoomRunner {
         if (!pass) throw new Error(`Unknown pass: ${p}`);
         return pass;
       }
-      return p;
+      if ('name' in p && !('run' in p)) {
+        // It's a config object { name, params }
+        const pass = this.passRegistry.get(p.name, (p as any).params);
+        if (!pass) throw new Error(`Unknown pass: ${p.name}`);
+        return pass;
+      }
+      return p as Pass<any>;
     });
     
     // We wrap the sink to collect data for the trace document

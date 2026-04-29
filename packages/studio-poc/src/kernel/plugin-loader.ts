@@ -8,9 +8,9 @@ import type { DocumentStore } from './document-store.js';
 export interface ExtensionHost {
   registerPass(pass: any): void;
   registerRpc(name: string, handler: (params: any) => Promise<any>): void;
+  callRpc(name: string, params: any): Promise<any>;
   docStore: DocumentStore;
   loomRunner: any;
-  rpcs: Map<string, (params: any) => Promise<any>>;
 }
 
 export class PluginLoader {
@@ -58,9 +58,31 @@ export class PluginLoader {
               console.log(`Registering RPC: ${name}`);
               this.rpcs.set(name, handler);
             },
+            callRpc: async (name, params) => {
+              const handler = this.rpcs.get(name);
+              if (!handler) {
+                throw new Error(`RPC method not found: ${name}`);
+              }
+              const result = await handler(params);
+              
+              // 记录 RPC 调用到 system.trace.rpc
+              const traceId = `system.trace.rpc:ext-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+              this.docStore.put({
+                id: traceId as any,
+                type: 'system.trace.rpc',
+                pluginId: manifest.id,
+                data: {
+                  invoker: { clientId: 'internal', callerRef: `rpc:${name}` },
+                  input: { rpc: name, params },
+                  result,
+                  timestamp: new Date().toISOString()
+                }
+              });
+              
+              return result;
+            },
             docStore: this.docStore,
             loomRunner: this.loomRunner,
-            rpcs: this.rpcs,
           };
           await module.activate(host);
         }

@@ -10,11 +10,12 @@
   },
   "dependencies": {
     "@loom/core": "workspace:*",
-    "@loom/stdlib": "workspace:*",
     "@loom/devtool": "workspace:*",
+    "@loom/st": "workspace:*",
+    "@loom/stdlib": "workspace:*",
     "better-sqlite3": "^11.5.0",
-    "ws": "^8.18.0",
-    "nanoid": "^5.0.8"
+    "nanoid": "^5.0.8",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.11",

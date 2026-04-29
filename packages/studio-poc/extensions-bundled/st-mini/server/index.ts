@@ -23,15 +23,18 @@ export async function activate(host: any) {
     // 1. Check for image generation intent (Simple PoC logic)
     let extraFrags: any[] = [];
     if (params.message && (params.message.includes('draw') || params.message.includes('画') || params.message.includes('生成图片'))) {
-      const t2i = host.rpcs.get('t2i.generate');
-      if (t2i) {
-        console.log('[st-mini] Image intent detected, calling T2I extension...');
-        const imgResult = await t2i({ prompt: params.message });
-        extraFrags.push({
-          id: `img-${Date.now()}`,
-          content: `![generated image](${imgResult.url})`,
-          meta: { type: 'image', ...imgResult }
-        });
+      try {
+        const imgResult = await host.callRpc('t2i.generate', { prompt: params.message });
+        if (imgResult) {
+          console.log('[st-mini] Image intent detected, calling T2I extension...');
+          extraFrags.push({
+            id: `img-${Date.now()}`,
+            content: `![generated image](${imgResult.url})`,
+            meta: { type: 'image', ...imgResult }
+          });
+        }
+      } catch (err) {
+        console.error('[st-mini] Failed to call T2I extension:', err);
       }
     }
 

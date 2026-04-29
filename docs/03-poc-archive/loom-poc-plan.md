@@ -1,4 +1,7 @@
-# Loom POC Plan
+# Loom Core PoC Plan
+
+> **Status: Sealed**
+> 本文件已封存。后续工作见 `loom-poc-hardening-brief.md` → `loom-adr-candidates.md`
 
 文档版本：v0.1-draft
 状态：开始执行
@@ -231,11 +234,15 @@ export function DedupById<M = unknown>(options?: {
 
 这些是 POC 不解决、但要**写进回顾报告的已知问题**，让 v0.1 正式开发能直接继承：
 
-1. `ResolutionPass` 的并发控制（`Promise.all` 全量并发够不够？能不能 opt-in 限流？）
-2. Pass 内部抛错时，已完成的 snapshots 是否返回给调用方（POC 里先全部丢弃）
-3. `AbortSignal` 在 Pass 内部的传递语义（POC 只做"pipeline 级别 abort"，不强制 Pass 响应）
-4. `structuredClone` 的开销：POC 里**每个 Pass 之间不 clone**，由 TypeScript `readonly` 保证约定，不保证运行时不可变——这是有意识的权衡，要验证是否足够
-5. 错误信息里"哪个 Pass / 哪个 fragment"的定位（POC 只做基础包装，不做漂亮的堆栈）
+`ResolutionPass` 的并发控制（`Promise.all` 全量并发够不够？能不能 opt-in 限流？）
+
+Pass 内部抛错时，已完成的 snapshots 是否返回给调用方（POC 里先全部丢弃）
+
+`AbortSignal` 在 Pass 内部的传递语义（POC 只做"pipeline 级别 abort"，不强制 Pass 响应）
+
+`structuredClone` 的开销：POC 里**每个 Pass 之间不 clone**，由 TypeScript `readonly` 保证约定，不保证运行时不可变——这是有意识的权衡，要验证是否足够
+
+错误信息里"哪个 Pass / 哪个 fragment"的定位（POC 只做基础包装，不做漂亮的堆栈）
 
 ---
 
