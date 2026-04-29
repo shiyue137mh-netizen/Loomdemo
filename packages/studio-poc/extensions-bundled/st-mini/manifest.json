@@ -1,0 +1,16 @@
+{
+  "id": "st-mini",
+  "version": "0.1.0",
+  "engines": {
+    "loom": "^0.1.0",
+    "studio": "^0.1.0"
+  },
+  "server": {
+    "entry": "./server/index.ts",
+    "contributes": {
+      "documentTypes": ["st-mini.character", "st-mini.chat.session"],
+      "rpc": ["st-mini.compose", "st-mini.invoke"],
+      "passes": ["StMiniSystemPromptPass", "StMiniHistoryPass"]
+    }
+  }
+}

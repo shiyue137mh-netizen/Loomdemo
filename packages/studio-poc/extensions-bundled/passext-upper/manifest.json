@@ -1,0 +1,14 @@
+{
+  "id": "passext-upper",
+  "version": "1.0.0",
+  "engines": {
+    "loom": "^0.1.0",
+    "studio": "^0.1.0"
+  },
+  "server": {
+    "entry": "./server/index.ts",
+    "contributes": {
+      "passes": ["UpperCasePass"]
+    }
+  }
+}

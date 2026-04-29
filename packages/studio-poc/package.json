@@ -1,0 +1,26 @@
+{
+  "name": "@loom/studio-poc",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/kernel/index.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@loom/core": "workspace:*",
+    "@loom/stdlib": "workspace:*",
+    "@loom/devtool": "workspace:*",
+    "better-sqlite3": "^11.5.0",
+    "ws": "^8.18.0",
+    "nanoid": "^5.0.8"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/ws": "^8.5.12",
+    "tsx": "^4.21.0",
+    "typescript": "5.7.3",
+    "vitest": "^4.1.5"
+  }
+}

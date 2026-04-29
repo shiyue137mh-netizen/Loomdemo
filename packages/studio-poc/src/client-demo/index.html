@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loom Studio PoC - Client A (Intentionally Ugly)</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: "Comic Sans MS", cursive; background: #ff00ff; color: #00ff00; }
+        .container { border: 5px dotted yellow; padding: 20px; }
+        .message { border: 1px solid white; margin: 10px 0; padding: 5px; background: rgba(0,0,0,0.5); }
+        .system { color: cyan; }
+        .user { color: yellow; }
+        .header { font-size: 3em; text-shadow: 2px 2px red; }
+        .gallery { border: 3px dashed orange; margin-top: 20px; padding: 10px; }
+        .gallery-item { display: inline-block; width: 100px; margin: 5px; text-align: center; font-size: 0.5em; }
+        .gallery-item img { width: 100px; border: 1px solid white; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        function App() {
+            const [messages, setMessages] = useState([]);
+            const [input, setInput] = useState('');
+            const [connected, setConnected] = useState(false);
+            const [includeUpper, setIncludeUpper] = useState(false);
+            const [gallery, setGallery] = useState([]);
+            const ws = useRef(null);
+
+            useEffect(() => {
+                ws.current = new WebSocket('ws://localhost:8080');
+                ws.current.onopen = () => setConnected(true);
+                ws.current.onclose = () => setConnected(false);
+                ws.current.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data.result && data.result.fragments) {
+                        setMessages(data.result.fragments);
+                        refreshGallery(); // Refresh after invocation might have new assets
+                    }
+                    if (data.result && Array.isArray(data.result) && data.result[0]?.type === 'asset.image') {
+                        setGallery(data.result);
+                    }
+                };
+                return () => ws.current.close();
+            }, []);
+
+            const refreshGallery = () => {
+                ws.current.send(JSON.stringify({
+                    jsonrpc: '2.0',
+                    id: 'refresh-gallery',
+                    method: 'docs.list',
+                    params: { type: 'asset.image' }
+                }));
+            };
+
+            const sendMessage = () => {
+                const id = Math.random().toString(36).substr(2, 9);
+                ws.current.send(JSON.stringify({
+                    jsonrpc: '2.0',
+                    id,
+                    method: 'st-mini.invoke',
+                    params: {
+                        message: input,
+                        includeUpper: includeUpper
+                    }
+                }));
+            };
+
+            return (
+                <div className="container">
+                    <h1 className="header">LOOM STUDIO POC</h1>
+                    <p>Status: {connected ? 'CONNECTED (HELL YEAH)' : 'DISCONNECTED (OH NO)'}</p>
+                    
+                    <div className="chat-box">
+                        {messages.map((m, i) => (
+                            <div key={i} className={`message ${m.meta.role || 'user'}`}>
+                                <b>{m.meta.role || 'user'}:</b> {m.content}
+                            </div>
+                        ))}
+                    </div>
+
+                    <hr />
+                    <input 
+                        type="text" 
+                        value={input} 
+                        onChange={(e) => setInput(e.target.value)} 
+                        placeholder="Type something..."
+                        style={{ width: '80%', padding: '10px' }}
+                    />
+                    <br />
+                    <label>
+                        <input 
+                            type="checkbox" 
+                            checked={includeUpper} 
+                            onChange={(e) => setIncludeUpper(e.target.checked)} 
+                        />
+                        ENABLE UPPERCASE OVERLOAD
+                    </label>
+                    <br />
+                    <button 
+                        onClick={sendMessage}
+                        style={{ padding: '20px', background: 'red', color: 'white', fontWeight: 'bold' }}
+                    >
+                        SEND TO THE LOOM
+                    </button>
+
+                    <div className="gallery">
+                        <h3>Shared Asset Gallery (Shared Data Layer)</h3>
+                        <button onClick={refreshGallery}>REFRESH GALLERY</button>
+                        <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                            {gallery.map(item => (
+                                <div key={item.id} className="gallery-item">
+                                    <img src={item.data.url} />
+                                    <div>{item.id.split(':')[1]}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

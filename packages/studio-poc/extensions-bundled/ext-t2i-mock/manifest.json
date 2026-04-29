@@ -1,0 +1,14 @@
+{
+  "id": "ext-t2i-mock",
+  "version": "0.1.0",
+  "engines": {
+    "loom": "^0.1.0",
+    "studio": "^0.1.0"
+  },
+  "server": {
+    "entry": "./server/index.ts",
+    "contributes": {
+      "rpc": ["t2i.generate"]
+    }
+  }
+}
