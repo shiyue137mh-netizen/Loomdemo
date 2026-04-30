@@ -39,3 +39,15 @@ Architecture Decision Records — 由 [`loom-adr-candidates.md`](../loom-adr-can
 - `PassRegistry` 工厂化的正式版实现 + 类型推导（ADR-005）。
 - `Pipeline.run` 类型收紧迁移（ADR-007）。
 - 白皮书 / studio-architecture 同步更新（ADR-001/002/004/007 都涉及文档调整）。
+- **DevTool 分层落地**（ADR-002 + 新增 [`loom-devtool-layered.md`](../../02-architecture/loom-devtool-layered.md)）：
+  - 把 `FileSink` 从 `@loom/core` 迁出到 `@loom/devtool` 包。
+  - `MemorySink` 默认 ring buffer 上限实施。
+  - 创建 `@loom/devtool` 包骨架（CLI + 静态 HTML report）。
+
+## 待提案的 ADR 候选（来自 DevTool 分层讨论）
+
+`loom-devtool-layered.md §9` 浮出三个新候选 ADR 题，需在后续 sprint 单独立项：
+
+- **(候选) Trace JSON Schema 升格为公开契约**：版本号、兼容性策略、跨语言 schema 包发布。
+- **(候选) Pass 配置 schema 内省机制**（ADR-005 续集）：让 Workbench 能给用户填表单。
+- **(候选) Snapshot 中 Thunk 的序列化策略**（ADR-007 续集）：thunk fragment 如何跨会话 replay。

@@ -9,8 +9,9 @@ Loom 的设计与决策文档库。
 
 ## 02. 架构设计 (Architecture)
 - [Studio 架构 (Studio Architecture)](./02-architecture/loom-studio-architecture.md) - Loom Studio (多栈集成工作台) 的详尽架构设计。
-- [可观测性 (Observability)](./02-architecture/loom-observability.md) - Trace、快照、诊断与可观测性设计。
-- [开发者工具 (Devtools)](./02-architecture/loom-devtools.md) - CLI、工作台面板等开发者工具的设计。
+- [可观测性 (Observability)](./02-architecture/loom-observability.md) - Trace、快照、诊断与可观测性**协议**。
+- [DevTools — 投影虚拟树 (UX 哲学)](./02-architecture/loom-devtools.md) - DevTool 在用户面前**应该长什么样**：平铺底座、投影虚拟树、级联剪枝。
+- [DevTool 分层方案 (Distribution)](./02-architecture/loom-devtool-layered.md) - DevTool 如何**被打包交付**到三层用户：Layer 1（`@loom/core`）/ Layer 2（`@loom/devtool`）/ Layer 3（Studio Extension）。
 - [架构 Q&A (Architecture Answers)](./02-architecture/loom-architecture-answers.md) - 针对架构疑难问题的解答与决策。
 
 ## 03. PoC 存档 (PoC Archive)
