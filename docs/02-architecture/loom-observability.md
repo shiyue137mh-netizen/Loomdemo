@@ -305,16 +305,21 @@ interface TraceSink {
 - WebSocketSink 可以实时推送到远程 DevTool
 - 一次性获取 Trace 只是 `MemorySink` 的一个特例
 
-### 5.2 v0.1 内建的 Sink
+### 5.2 内建的 Sink（按分层归属）
 
-| Sink | 用途 | 优先级 |
-|---|---|---|
-| `NullSink` | `trace: false` 时使用，所有方法为 no-op | 必做 |
-| `MemorySink` | 跑完后一次性返回 Trace 对象，测试和 REPL 首选 | 必做 |
-| `FileSink` | 流式写到 `./trace.json` 或 `.loom-trace/<traceId>.json` | 必做 |
-| `ConsoleSink` | 直接 pretty-print 到 stdout，CLI 快速调试 | 建议做 |
+> **修订（2026-04-29）**：原文档把 `FileSink` 列为 Core 内置 Sink。经 [`loom-devtool-layered.md`](./loom-devtool-layered.md) 设计讨论，FileSink 因依赖 Node `fs`、破坏 Layer 1 的运行时中立性，已从 Core 移到 `@loom/devtool` 包（Layer 2）。
+> 同步参见 ADR-002 Implementation Notes。
 
-**暂不做**：WebSocketSink、OTelSink、HttpSink —— 推到 v0.2+。
+| Sink | 用途 | 归属 | 优先级 |
+|---|---|---|---|
+| `NullSink` | `trace: false` 时使用，所有方法为 no-op | **Layer 1**（`@loom/core`） | 必做 |
+| `MemorySink` | 跑完后一次性返回 Trace 对象，测试和 REPL 首选 | **Layer 1**（`@loom/core`） | 必做 |
+| `ConsoleSink` | 直接打印到 stdout，文本格式（无 ANSI 颜色） | **Layer 1**（`@loom/core`） | 建议做 |
+| `FileSink` | 流式写到 `./trace.json` 或 `.loom-trace/<traceId>.json` | **Layer 2**（`@loom/devtool`） | 必做 |
+| Pretty CLI Printer | 终端彩色输出、树形结构 | **Layer 2**（`@loom/devtool`） | 必做 |
+
+**Layer 1 的判断标准**：运行时中立（不依赖 fs / 终端能力 / DOM），代码量小（不引入第三方依赖）。
+**暂不做**：WebSocketSink、OTelSink、HttpSink —— 推到 v0.2+，且都属于 Layer 2 或上层 Sink。
 
 ### 5.3 使用形态
 
@@ -391,7 +396,9 @@ DevTool 可以忽略这个字段，但 UI 组件应当 **为它保留位置**（
 
 ## 7. DevTool 实施路线图
 
-**核心决策：不在 v0.1 做任何带 server 的交互式 UI。**
+> **本节范围已收窄**：DevTool 的完整分发模型（三层洋葱、四种姿态、五种用户场景）已迁移至 [`loom-devtool-layered.md`](./loom-devtool-layered.md)。本节只保留 v0.1/v0.1.x 的具体产出形态，作为分层方案的"Layer 2 首发部分"细化。
+
+**核心决策：不在 v0.1 做任何带 server 的交互式 UI。** 所有 v0.1 产物都是 Layer 2（`@loom/devtool`）的 CLI / 静态 HTML 形态，不涉及 Layer 3（Studio Extension）。
 
 ### 7.1 阶段一 —— v0.1：CLI Pretty-Printer
 
@@ -418,7 +425,7 @@ diagnostics:
 ```
 
 **技术选型**：`picocolors` + 手写树形打印，约 300 行。
-**价值**：让用户第一天就能看到"投影虚拟树"的雏形，不用等 v0.2。
+**价值**：让用户第一天就能看到"投影虚���树"的雏形，不用等 v0.2。
 
 ### 7.2 阶段二 —— v0.1.x：静态 HTML Report
 
@@ -432,20 +439,17 @@ diagnostics:
 - 全文搜索
 
 **技术选型**：
-- Preact 或无框架纯 DOM（避免拖一整个 React 生态进来）
+- Preact 或���框架纯 DOM（避免拖一整个 React 生态进来）
 - 最终产物单文件 < 500KB
 - 不需要构建步骤，用户拿到 HTML 双击即可
 
 **价值**：这是 **工件（artifact）**，不是 **产品**。可以随 PR 提交、粘到 issue、CI 里生成归档。这是 sourcemap / Lighthouse report / `tsc --listFiles` 的定位。
 
-### 7.3 阶段三 —— v0.2+：交互式 DevTool
+### 7.3 阶段三及之后 —— v0.2+：交互式 DevTool
 
-v0.1 协议稳定后再启动。可能的形态：
+v0.2+ 起进入 Layer 3 形态（Studio Extension），具体路线图（Inspector / Replayer / Workbench / Live Debugger 四种姿态的演进）由 [`loom-devtool-layered.md §10`](./loom-devtool-layered.md) 统一管理，本文档不再重复。
 
-- **VS Code 扩展**（开发时刚需）
-- **独立 Web UI**（CI、在线 demo、团队 review）
-
-两者共享同一个前端包，只是宿主不同。
+**关键约束**：v0.2+ 的 Layer 3 必须复用 v0.1 的 Layer 1/2 数据格式，不允许在 Layer 3 引入"Studio 内部专用"的 trace 形态。
 
 **不推荐的方向**：
 - 浏览器扩展（React DevTools 路线）—— Loom 主要跑在 Node 后端
@@ -453,11 +457,11 @@ v0.1 协议稳定后再启动。可能的形态：
 
 ### 7.4 阶段总览
 
-| 阶段 | 版本 | 产物 | 代码量 |
-|---|---|---|---|
-| 一 | v0.1 | CLI pretty-printer | ~300 行 |
-| 二 | v0.1.x | 静态 HTML report | ~1500 行 |
-| 三 | v0.2+ | VS Code 扩展 / Web UI | 视情况 |
+| 阶段 | 版本 | Layer | 产物 | 代码量 |
+|---|---|---|---|---|
+| 一 | v0.1 | L2 | CLI pretty-printer | ~300 行 |
+| 二 | v0.1.x | L2 | 静态 HTML report | ~1500 行 |
+| 三 | v0.2+ | L3 | Studio Extension（详见分层文档） | 视情况 |
 
 ---
 
@@ -483,14 +487,16 @@ v0.1 协议稳定后再启动。可能的形态：
 
 - **白皮书（whitepaper）**定义了 Fragment、Pass、Pipeline 的不可变语义。本文档的所有数据模型都建立在那之上。
 - **DevTools 文档（loom-devtools）**定义了"平铺底座投影为虚拟树"的 UI 抽象。本文档的 Trace 协议是那个 UI 的数据源。
+- **DevTool 分层方案（loom-devtool-layered）**定义了 DevTool 如何被打包交付到 Layer 1/2/3 三种用户群。本文档的 Trace 协议是这个分发模型的"基础数据契约"。
 - **POC Plan**中的 `Pass.run` 签名应当在 v0.1 正式化时，按本文档 §3.1 扩展 `reads/writes/requires/provides` 字段。
 
-这三份文档构成 v0.1 的完整设计闭环：
+四份文档构成 v0.1 的完整设计闭环：
 
 ```
-whitepaper.md      —  语义层（Fragment / Pass / Pipeline 是什么）
-observability.md   —  协议层（运行时如何被观察，本文档）
-devtools.md        —  呈现层（观察到的数据如何被可视化）
+whitepaper.md              —  语义层（Fragment / Pass / Pipeline 是什么）
+observability.md           —  协议层（运行时如何被观察，本文档）
+devtools.md                —  呈现层（投影虚拟树的 UX 哲学）
+devtool-layered.md         —  分发层（三层洋葱、L1/L2/L3 包结构）
 ```
 
 ---

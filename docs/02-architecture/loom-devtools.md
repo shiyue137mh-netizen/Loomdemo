@@ -1,4 +1,16 @@
-Loom 架构准则：平铺的底座与投影的树
+# Loom DevTools — 投影虚拟树（UX 哲学）
+
+> **本文档定位**：DevTool 在用户面前**应该长什么样、为什么这样设计**——即"投影虚拟树"的 UX 哲学。
+>
+> **姊妹文档**：
+> - [`loom-observability.md`](./loom-observability.md) — DevTool 消费的数据协议（Trace / Mutation / Diagnostic）
+> - [`loom-devtool-layered.md`](./loom-devtool-layered.md) — DevTool 如何被打包分发到三层用户（Layer 1/2/3 洋葱模型）
+>
+> 这三份文档构成 DevTool 的完整设计：**呈现层（本文）+ 协议层 + 分发层**。
+
+---
+
+## Loom 架构准则：平铺的底座与投影的树
 
 引擎的克制，是为了成就调试器的全知。我们将运算的权力交还给一维的流水线，将理解的特权留给二维的虚拟树。
 
