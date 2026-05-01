@@ -6,6 +6,7 @@
   "required": [
     "version",
     "mode",
+    "status",
     "initialFragments",
     "finalFragments",
     "executions",
@@ -14,30 +15,27 @@
   "properties": {
     "version": { "const": "1" },
     "mode": { "enum": ["on", "off"] },
-    "initialFragments": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/fragment" }
-    },
-    "finalFragments": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/fragment" }
-    },
-    "passConfigs": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/passConfig" }
-    },
-    "executions": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/execution" }
-    },
-    "diagnostics": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/diagnostic" }
-    }
+    "status": { "enum": ["ok", "error"] },
+    "error": { "$ref": "#/$defs/serializedError" },
+    "initialFragments": { "type": "array", "items": { "$ref": "#/$defs/fragment" } },
+    "finalFragments": { "type": "array", "items": { "$ref": "#/$defs/fragment" } },
+    "passConfigs": { "type": "array", "items": { "$ref": "#/$defs/passConfig" } },
+    "executions": { "type": "array", "items": { "$ref": "#/$defs/execution" } },
+    "diagnostics": { "type": "array", "items": { "$ref": "#/$defs/diagnostic" } }
   },
   "additionalProperties": false,
   "$defs": {
     "json": true,
+    "serializedError": {
+      "type": "object",
+      "required": ["name", "message"],
+      "properties": {
+        "name": { "type": "string" },
+        "message": { "type": "string" },
+        "stack": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
     "fragment": {
       "type": "object",
       "required": ["id", "content", "meta"],
@@ -67,14 +65,8 @@
         "pass": { "type": "string", "minLength": 1 },
         "fragmentId": { "type": "string" },
         "at": { "type": "number" },
-        "meta": {
-          "type": "object",
-          "additionalProperties": { "$ref": "#/$defs/json" }
-        },
-        "relatedFragmentIds": {
-          "type": "array",
-          "items": { "type": "string" }
-        }
+        "meta": { "type": "object", "additionalProperties": { "$ref": "#/$defs/json" } },
+        "relatedFragmentIds": { "type": "array", "items": { "type": "string" } }
       },
       "additionalProperties": false
     },
@@ -82,32 +74,35 @@
       "oneOf": [
         {
           "type": "object",
-          "required": ["op", "fragmentId", "index"],
+          "required": ["op", "fragmentId", "index", "fragment"],
           "properties": {
             "op": { "const": "add" },
             "fragmentId": { "type": "string", "minLength": 1 },
-            "index": { "type": "integer", "minimum": 0 }
+            "index": { "type": "integer", "minimum": 0 },
+            "fragment": { "$ref": "#/$defs/fragment" }
           },
           "additionalProperties": false
         },
         {
           "type": "object",
-          "required": ["op", "fragmentId", "index"],
+          "required": ["op", "fragmentId", "index", "fragment"],
           "properties": {
             "op": { "const": "remove" },
             "fragmentId": { "type": "string", "minLength": 1 },
-            "index": { "type": "integer", "minimum": 0 }
+            "index": { "type": "integer", "minimum": 0 },
+            "fragment": { "$ref": "#/$defs/fragment" }
           },
           "additionalProperties": false
         },
         {
           "type": "object",
-          "required": ["op", "fragmentId", "beforeContent", "afterContent"],
+          "required": ["op", "fragmentId", "index", "before", "after"],
           "properties": {
             "op": { "const": "update" },
             "fragmentId": { "type": "string", "minLength": 1 },
-            "beforeContent": { "type": "string" },
-            "afterContent": { "type": "string" }
+            "index": { "type": "integer", "minimum": 0 },
+            "before": { "$ref": "#/$defs/fragment" },
+            "after": { "$ref": "#/$defs/fragment" }
           },
           "additionalProperties": false
         },
@@ -127,43 +122,20 @@
     "snapshot": {
       "type": "object",
       "properties": {
-        "before": {
-          "type": "array",
-          "items": { "$ref": "#/$defs/fragment" }
-        },
-        "after": {
-          "type": "array",
-          "items": { "$ref": "#/$defs/fragment" }
-        }
+        "before": { "type": "array", "items": { "$ref": "#/$defs/fragment" } },
+        "after": { "type": "array", "items": { "$ref": "#/$defs/fragment" } }
       },
       "additionalProperties": false
     },
     "execution": {
       "type": "object",
-      "required": [
-        "passName",
-        "passIndex",
-        "durationMs",
-        "diagnostics",
-        "mutations",
-        "afterFragments"
-      ],
+      "required": ["passName", "passIndex", "durationMs", "diagnostics", "mutations"],
       "properties": {
         "passName": { "type": "string", "minLength": 1 },
         "passIndex": { "type": "integer", "minimum": 0 },
         "durationMs": { "type": "number", "minimum": 0 },
-        "diagnostics": {
-          "type": "array",
-          "items": { "$ref": "#/$defs/diagnostic" }
-        },
-        "mutations": {
-          "type": "array",
-          "items": { "$ref": "#/$defs/mutation" }
-        },
-        "afterFragments": {
-          "type": "array",
-          "items": { "$ref": "#/$defs/fragment" }
-        },
+        "diagnostics": { "type": "array", "items": { "$ref": "#/$defs/diagnostic" } },
+        "mutations": { "type": "array", "items": { "$ref": "#/$defs/mutation" } },
         "snapshot": { "$ref": "#/$defs/snapshot" }
       },
       "additionalProperties": false

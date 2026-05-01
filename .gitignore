@@ -12,6 +12,7 @@ next.user-config.*
 
 # Common ignores
 node_modules
+packages/*/dist/
 .next/
 .DS_Store
 .kilo/

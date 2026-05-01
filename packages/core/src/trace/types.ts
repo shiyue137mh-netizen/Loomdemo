@@ -2,9 +2,11 @@ import type { Diagnostic } from '../diagnostic/types'
 import type { Fragment } from '../fragment/types'
 import type { Mutation } from '../mutation/types'
 import type { PassConfig } from '../pass/types'
+import type { SerializedError } from '../pipeline/errors'
 
 export type TraceMode = 'on' | 'off'
 export type SnapshotMode = 'off' | 'boundaries' | 'after-only'
+export type TraceStatus = 'ok' | 'error'
 
 export interface TraceOptions {
   readonly mode?: TraceMode
@@ -23,8 +25,7 @@ export interface TraceExecution<M = unknown> {
   readonly passIndex: number
   readonly durationMs: number
   readonly diagnostics: readonly Diagnostic[]
-  readonly mutations: readonly Mutation[]
-  readonly afterFragments: readonly Fragment<M>[]
+  readonly mutations: readonly Mutation<M>[]
   readonly snapshot?: {
     readonly before?: readonly Fragment<M>[]
     readonly after?: readonly Fragment<M>[]
@@ -34,6 +35,8 @@ export interface TraceExecution<M = unknown> {
 export interface Trace<M = unknown> {
   readonly version: '1'
   readonly mode: TraceMode
+  readonly status: TraceStatus
+  readonly error?: SerializedError
   readonly initialFragments: readonly Fragment<M>[]
   readonly finalFragments: readonly Fragment<M>[]
   readonly passConfigs?: readonly PassConfig[]

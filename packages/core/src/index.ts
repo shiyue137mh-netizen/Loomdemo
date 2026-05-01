@@ -27,7 +27,7 @@ export type {
   TraceSink,
 } from './trace/types'
 export { TraceCollector } from './trace/collector'
-export { deserializeTrace, serializeTrace } from './trace/serialize'
+export { deserializeTrace, deserializeTraceChecked, serializeTrace } from './trace/serialize'
 
 export { annotateOwners, assertOwnerNotMutated, detectCrossOwnerWrites } from './owner/owner'
 

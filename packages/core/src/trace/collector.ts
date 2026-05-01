@@ -3,6 +3,7 @@ import type { Fragment } from '../fragment/types'
 import { cloneFragments } from '../fragment/clone'
 import type { Mutation } from '../mutation/types'
 import type { PassConfig } from '../pass/types'
+import type { SerializedError } from '../pipeline/errors'
 import type { Trace, TraceExecution, TraceOptions, TraceSink } from './types'
 
 function normalizeSinks(sink?: TraceSink | readonly TraceSink[]): readonly TraceSink[] {
@@ -61,7 +62,7 @@ export class TraceCollector<M = unknown> {
     readonly passIndex: number
     readonly durationMs: number
     readonly diagnostics: readonly Diagnostic[]
-    readonly mutations: readonly Mutation[]
+    readonly mutations: readonly Mutation<M>[]
     readonly beforeFragments: readonly Fragment<M>[]
     readonly afterFragments: readonly Fragment<M>[]
   }): void {
@@ -73,7 +74,6 @@ export class TraceCollector<M = unknown> {
       durationMs: input.durationMs,
       diagnostics: [...input.diagnostics],
       mutations: [...input.mutations],
-      afterFragments: cloneFragments(input.afterFragments),
       ...(this.snapshotMode !== 'off'
         ? {
             snapshot: {
@@ -90,11 +90,13 @@ export class TraceCollector<M = unknown> {
     notifySink(this.sinks, 'onPassEnd', execution)
   }
 
-  endTrace(finalFragments: readonly Fragment<M>[]): Trace<M> {
+  endTrace(finalFragments: readonly Fragment<M>[], status: 'ok' | 'error' = 'ok', error?: SerializedError): Trace<M> {
     this.finalFragments = cloneFragments(finalFragments)
     return {
       version: '1',
       mode: this.mode,
+      status,
+      ...(error ? { error } : {}),
       initialFragments: this.mode === 'off' ? [] : cloneFragments(this.initialFragments),
       finalFragments: this.mode === 'off' ? [] : this.finalFragments,
       ...(this.passConfigs ? { passConfigs: this.passConfigs } : {}),

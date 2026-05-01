@@ -31,6 +31,13 @@ function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
   return !!value && typeof value === 'object' && typeof (value as { then?: unknown }).then === 'function'
 }
 
+function suppressPromiseRejection(value: PromiseLike<unknown>): void {
+  Promise.resolve(value).catch(() => {
+    // Unsupported async pass rejections are intentionally swallowed after
+    // Core has already emitted a synchronous async-pass diagnostic.
+  })
+}
+
 function validatePasses(passes: readonly Pass[]): Diagnostic[] {
   const diagnostics: Diagnostic[] = []
   for (let i = 0; i < passes.length; i++) {
@@ -64,12 +71,10 @@ function validatePasses(passes: readonly Pass[]): Diagnostic[] {
   return diagnostics
 }
 
-function throwIfErrors(diagnostics: readonly Diagnostic[]): void {
-  const errors = diagnostics.filter((diagnostic) => diagnostic.severity === 'error')
-  if (errors.length === 0) return
-  throw new PipelineValidationError(
-    `Pipeline validation failed with ${errors.length} error(s)`,
-    errors.map((diagnostic) => ({ code: diagnostic.code, message: diagnostic.message }))
+function validationError(message: string, diagnostics: readonly Diagnostic[]): PipelineValidationError {
+  return new PipelineValidationError(
+    message,
+    diagnostics.map((diagnostic) => ({ code: diagnostic.code, message: diagnostic.message }))
   )
 }
 
@@ -78,14 +83,37 @@ function normalizeInitialFragments<M>(fragments: readonly Fragment<M>[]): Fragme
     const meta = fragment.meta && typeof fragment.meta === 'object' && !Array.isArray(fragment.meta)
       ? fragment.meta as Record<string, unknown>
       : {}
+    const { __owner: _owner, ...rest } = meta
     return {
       ...fragment,
       meta: {
-        ...meta,
-        __owner: typeof meta.__owner === 'string' ? meta.__owner : 'input',
+        ...rest,
+        __owner: 'input',
       } as M,
     }
   })
+}
+
+function toValidationDiagnostics(error: PipelineValidationError, passName: string): Diagnostic[] {
+  return error.diagnostics.map((item): Diagnostic => ({
+    severity: 'error',
+    code: item.code,
+    message: item.message,
+    pass: passName,
+  }))
+}
+
+function errorDiagnostic(error: unknown, passName: string): Diagnostic {
+  return {
+    severity: 'error',
+    code: error instanceof Error && error.message.includes('meta.__owner')
+      ? 'loom/owner-mutation'
+      : error instanceof Error && error.message.includes('returned a Promise')
+        ? 'loom/async-pass-result'
+        : 'loom/pass-threw',
+    message: error instanceof Error ? error.message : String(error),
+    pass: passName,
+  }
 }
 
 export function run<M = unknown>(config: RunConfig<M>): RunResult<M> {
@@ -101,7 +129,7 @@ export function run<M = unknown>(config: RunConfig<M>): RunResult<M> {
     trace.addDiagnostic(diagnostic)
     return {
       fragments: config.fragments,
-      trace: trace.endTrace(config.fragments),
+      trace: trace.endTrace(config.fragments, 'error', serializeError(error)),
       diagnostics,
       status: 'error',
       error: serializeError(error),
@@ -134,7 +162,17 @@ export function runPasses<M = unknown>(input: {
     diagnostics.push(diagnostic)
     collector.addDiagnostic(diagnostic)
   }
-  throwIfErrors(constructionDiagnostics)
+  if (constructionDiagnostics.some((diagnostic) => diagnostic.severity === 'error')) {
+    const error = validationError('Pipeline construction failed', constructionDiagnostics)
+    const serialized = serializeError(error)
+    return {
+      fragments: current,
+      trace: collector.endTrace(current, 'error', serialized),
+      diagnostics,
+      status: 'error',
+      error: serialized,
+    }
+  }
 
   for (let passIndex = 0; passIndex < input.passes.length; passIndex++) {
     const pass = input.passes[passIndex]!
@@ -154,13 +192,16 @@ export function runPasses<M = unknown>(input: {
       })
       const result = pass.run(current, ctx)
       if (isPromiseLike(result)) {
+        suppressPromiseRejection(result)
         throw new Error(`Pass "${pass.name}" returned a Promise; Core v0.1 requires synchronous passes`)
       }
 
       let next = [...result]
       const resultDiagnostics = validateFragments(next as readonly Fragment[], pass.name)
       for (const diagnostic of resultDiagnostics) passDiagnostics.push(diagnostic)
-      throwIfErrors(resultDiagnostics)
+      if (resultDiagnostics.some((diagnostic) => diagnostic.severity === 'error')) {
+        throw validationError(`Pass "${pass.name}" returned invalid fragments`, resultDiagnostics)
+      }
 
       assertOwnerNotMutated(before, next)
       next = annotateOwners(before, next, pass.name)
@@ -186,25 +227,24 @@ export function runPasses<M = unknown>(input: {
 
       current = next
     } catch (error) {
-      const diagnostic: Diagnostic = {
-        severity: 'error',
-        code: error instanceof Error && error.message.includes('meta.__owner')
-          ? 'loom/owner-mutation'
-          : error instanceof Error && error.message.includes('returned a Promise')
-            ? 'loom/async-pass-result'
-            : 'loom/pass-threw',
-        message: error instanceof Error ? error.message : String(error),
-        pass: pass.name,
-      }
-      diagnostics.push(diagnostic)
-      collector.addDiagnostic(diagnostic)
+      const errorDiagnostics = error instanceof PipelineValidationError
+        ? toValidationDiagnostics(error, pass.name)
+        : [errorDiagnostic(error, pass.name)]
+      const allPassDiagnostics = [...passDiagnostics, ...errorDiagnostics]
 
+      for (const diagnostic of allPassDiagnostics) {
+        diagnostics.push(diagnostic)
+        collector.addDiagnostic(diagnostic)
+      }
+
+      const safeFragments = before
+      const serialized = serializeError(error)
       return {
-        fragments: current,
-        trace: collector.endTrace(current),
+        fragments: safeFragments,
+        trace: collector.endTrace(safeFragments, 'error', serialized),
         diagnostics,
         status: 'error',
-        error: serializeError(error),
+        error: serialized,
       }
     }
   }

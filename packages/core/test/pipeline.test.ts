@@ -33,6 +33,20 @@ describe('pipeline', () => {
     expect(result.diagnostics.some((diagnostic) => diagnostic.code === 'loom/async-pass-result')).toBe(true)
   })
 
+  it('handles rejected async passes without changing sync error result', () => {
+    const asyncPass = {
+      name: 'async-pass',
+      run: async () => {
+        throw new Error('async boom')
+      },
+    } as unknown as Pass
+
+    const result = pipeline([asyncPass]).run([{ id: 'f1', content: 'hello', meta: {} }])
+
+    expect(result.status).toBe('error')
+    expect(result.diagnostics.some((diagnostic) => diagnostic.code === 'loom/async-pass-result')).toBe(true)
+  })
+
   it('does not validate requires/provides in Core', () => {
     const pass: Pass = {
       name: 'needs-capability',
@@ -58,6 +72,7 @@ describe('pipeline', () => {
     expect(result.trace.mode).toBe('on')
     expect(result.trace.executions[0]!.mutations).toHaveLength(1)
     expect(result.trace.executions[0]!.snapshot).toBeUndefined()
+    expect('afterFragments' in result.trace.executions[0]!).toBe(false)
   })
 
   it('records snapshots only when explicitly requested', () => {
@@ -75,15 +90,138 @@ describe('pipeline', () => {
     expect(result.trace.executions[0]!.snapshot?.after).toHaveLength(1)
   })
 
-  it('validates fragment ids and string content', () => {
+  it('returns error result for invalid initial fragments', () => {
     const pass: Pass = {
       name: 'noop',
       run: (fragments) => fragments,
     }
 
-    expect(() => pipeline([pass]).run([{ id: '', content: 'hello', meta: {} }])).toThrow()
-    expect(() =>
-      pipeline([pass]).run([{ id: 'f1', content: Promise.resolve('bad'), meta: {} } as any])
-    ).toThrow()
+    const emptyId = pipeline([pass]).run([{ id: '', content: 'hello', meta: {} }])
+    const invalidContent = pipeline([pass]).run([{ id: 'f1', content: Promise.resolve('bad'), meta: {} } as any])
+
+    expect(emptyId.status).toBe('error')
+    expect(emptyId.diagnostics.some((diagnostic) => diagnostic.code === 'loom/empty-id')).toBe(true)
+    expect(invalidContent.status).toBe('error')
+    expect(invalidContent.diagnostics.some((diagnostic) => diagnostic.code === 'loom/invalid-content')).toBe(true)
+  })
+
+  it('returns error result for invalid pass objects', () => {
+    const result = pipeline([null as any]).run([{ id: 'f1', content: 'hello', meta: {} }])
+
+    expect(result.status).toBe('error')
+    expect(result.diagnostics.some((diagnostic) => diagnostic.code === 'loom/invalid-pass')).toBe(true)
+  })
+
+  it('returns error result when a pass throws and preserves previous fragments', () => {
+    const good: Pass = {
+      name: 'good',
+      run: (fragments) => fragments.map((fragment) => ({ ...fragment, content: 'good' })),
+    }
+    const bad: Pass = {
+      name: 'bad',
+      run: () => {
+        throw new Error('boom')
+      },
+    }
+
+    const result = pipeline([good, bad]).run([{ id: 'f1', content: 'start', meta: {} }])
+
+    expect(result.status).toBe('error')
+    expect(result.fragments[0]!.content).toBe('good')
+    expect(result.diagnostics.some((diagnostic) => diagnostic.code === 'loom/pass-threw')).toBe(true)
+  })
+
+  it('does not leak in-place mutations from a throwing pass', () => {
+    const bad: Pass = {
+      name: 'bad',
+      run: (fragments) => {
+        ;(fragments[0] as { content: string }).content = 'partial'
+        throw new Error('boom')
+      },
+    }
+
+    const result = pipeline([bad]).run([{ id: 'f1', content: 'original', meta: {} }])
+
+    expect(result.status).toBe('error')
+    expect(result.fragments[0]!.content).toBe('original')
+    expect(result.trace.finalFragments[0]!.content).toBe('original')
+  })
+
+  it('keeps diagnostics emitted before a pass throws', () => {
+    const bad: Pass = {
+      name: 'bad',
+      run: (fragments, ctx) => {
+        ctx.diagnose({ severity: 'warning', code: 'test/before-throw', message: 'before throw' })
+        throw new Error('boom')
+      },
+    }
+
+    const result = pipeline([bad]).run([{ id: 'f1', content: 'original', meta: {} }])
+
+    expect(result.status).toBe('error')
+    expect(result.diagnostics.some((diagnostic) => diagnostic.code === 'test/before-throw')).toBe(true)
+    expect(result.diagnostics.some((diagnostic) => diagnostic.code === 'loom/pass-threw')).toBe(true)
+  })
+
+  it('returns error result when pass output has duplicate or empty ids', () => {
+    const duplicate: Pass = {
+      name: 'duplicate',
+      run: () => [
+        { id: 'dup', content: 'a', meta: {} },
+        { id: 'dup', content: 'b', meta: {} },
+      ],
+    }
+    const empty: Pass = {
+      name: 'empty',
+      run: () => [{ id: '', content: 'a', meta: {} }],
+    }
+
+    const duplicateResult = pipeline([duplicate]).run([{ id: 'f1', content: 'start', meta: {} }])
+    const emptyResult = pipeline([empty]).run([{ id: 'f1', content: 'start', meta: {} }])
+
+    expect(duplicateResult.status).toBe('error')
+    expect(duplicateResult.diagnostics.some((diagnostic) => diagnostic.code === 'loom/duplicate-id')).toBe(true)
+    expect(emptyResult.status).toBe('error')
+    expect(emptyResult.diagnostics.some((diagnostic) => diagnostic.code === 'loom/empty-id')).toBe(true)
+  })
+
+  it('collects ctx.diagnose diagnostics into result and trace', () => {
+    const pass: Pass = {
+      name: 'diagnoser',
+      run: (fragments, ctx) => {
+        ctx.diagnose({
+          severity: 'hint',
+          code: 'test/hint',
+          message: 'hello',
+          fragmentId: fragments[0]!.id,
+        })
+        return fragments
+      },
+    }
+
+    const result = pipeline([pass]).run([{ id: 'f1', content: 'hello', meta: {} }])
+
+    expect(result.diagnostics.some((diagnostic) => diagnostic.code === 'test/hint')).toBe(true)
+    expect(result.trace.executions[0]!.diagnostics.some((diagnostic) => diagnostic.code === 'test/hint')).toBe(true)
+  })
+
+  it('keeps result diagnostics but omits trace payload when trace mode is off', () => {
+    const pass: Pass = {
+      name: 'diagnoser',
+      run: (fragments, ctx) => {
+        ctx.diagnose({ severity: 'info', code: 'test/info', message: 'info' })
+        return fragments
+      },
+    }
+
+    const result = pipeline([pass]).run(
+      [{ id: 'f1', content: 'hello', meta: {} }],
+      { mode: 'off' }
+    )
+
+    expect(result.status).toBe('ok')
+    expect(result.diagnostics.some((diagnostic) => diagnostic.code === 'test/info')).toBe(true)
+    expect(result.trace.executions).toEqual([])
+    expect(result.trace.finalFragments).toEqual([])
   })
 })

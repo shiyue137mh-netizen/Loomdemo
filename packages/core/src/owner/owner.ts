@@ -1,5 +1,6 @@
 import type { Diagnostic } from '../diagnostic/types'
 import type { Fragment } from '../fragment/types'
+import { deepEqual } from '../utils/deep-equal'
 
 export type OwnerMeta = Record<string, unknown> & { __owner?: string }
 
@@ -21,12 +22,17 @@ function withoutOwner(meta: unknown): unknown {
   return rest
 }
 
-function sameJson(left: unknown, right: unknown): boolean {
-  return JSON.stringify(left) === JSON.stringify(right)
+function withOwner<M>(fragment: Fragment<M>, owner: string): Fragment<M> {
+  const meta = asMetaRecord(fragment.meta)
+  const { __owner: _owner, ...rest } = meta
+  return {
+    ...fragment,
+    meta: { ...rest, __owner: owner } as M,
+  }
 }
 
 function fragmentChanged(before: Fragment<unknown>, after: Fragment<unknown>): boolean {
-  return before.content !== after.content || !sameJson(withoutOwner(before.meta), withoutOwner(after.meta))
+  return before.content !== after.content || !deepEqual(withoutOwner(before.meta), withoutOwner(after.meta))
 }
 
 export function annotateOwners<M>(
@@ -34,22 +40,14 @@ export function annotateOwners<M>(
   after: readonly Fragment<M>[],
   passName: string
 ): Fragment<M>[] {
-  const beforeIds = new Set(before.map((fragment) => fragment.id))
+  const beforeById = new Map(before.map((fragment) => [fragment.id, fragment]))
 
   return after.map((fragment) => {
-    if (beforeIds.has(fragment.id)) return fragment
-
-    const meta = asMetaRecord(fragment.meta)
-    if (meta.__owner === undefined) {
-      return {
-        ...fragment,
-        meta: { ...meta, __owner: passName } as M,
-      }
+    const previous = beforeById.get(fragment.id)
+    if (previous) {
+      return withOwner(fragment, ownerOf(previous) ?? 'input')
     }
-    if (typeof meta.__owner !== 'string') {
-      throw new Error(`Fragment "${fragment.id}" has non-string meta.__owner`)
-    }
-    return fragment
+    return withOwner(fragment, passName)
   })
 }
 
@@ -65,7 +63,7 @@ export function assertOwnerNotMutated<M>(
 
     const previousOwner = ownerOf(previous)
     const nextOwner = ownerOf(next)
-    if (previousOwner !== nextOwner) {
+    if (nextOwner !== undefined && previousOwner !== nextOwner) {
       throw new Error(`Fragment "${next.id}" meta.__owner cannot be modified`)
     }
   }
@@ -78,6 +76,7 @@ export function detectCrossOwnerWrites<M>(
 ): Diagnostic[] {
   const diagnostics: Diagnostic[] = []
   const beforeById = new Map(before.map((fragment) => [fragment.id, fragment]))
+  const afterIds = new Set(after.map((fragment) => fragment.id))
 
   for (const next of after) {
     const previous = beforeById.get(next.id)
@@ -92,6 +91,21 @@ export function detectCrossOwnerWrites<M>(
       pass: passName,
       fragmentId: next.id,
       meta: { owner },
+    })
+  }
+
+  for (const previous of before) {
+    if (afterIds.has(previous.id)) continue
+    const owner = ownerOf(previous)
+    if (!owner || owner === passName) continue
+
+    diagnostics.push({
+      severity: 'warning',
+      code: 'loom/cross-owner-write',
+      message: `Pass "${passName}" removed fragment "${previous.id}" owned by "${owner}"`,
+      pass: passName,
+      fragmentId: previous.id,
+      meta: { owner, operation: 'remove' },
     })
   }
 

@@ -1,11 +1,24 @@
-export type Mutation =
-  | { readonly op: 'add'; readonly fragmentId: string; readonly index: number }
-  | { readonly op: 'remove'; readonly fragmentId: string; readonly index: number }
+import type { Fragment } from '../fragment/types'
+
+export type Mutation<M = unknown> =
+  | {
+      readonly op: 'add'
+      readonly fragmentId: string
+      readonly index: number
+      readonly fragment: Fragment<M>
+    }
+  | {
+      readonly op: 'remove'
+      readonly fragmentId: string
+      readonly index: number
+      readonly fragment: Fragment<M>
+    }
   | {
       readonly op: 'update'
       readonly fragmentId: string
-      readonly beforeContent: string
-      readonly afterContent: string
+      readonly index: number
+      readonly before: Fragment<M>
+      readonly after: Fragment<M>
     }
   | {
       readonly op: 'move'

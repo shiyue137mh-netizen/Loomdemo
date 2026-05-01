@@ -4,16 +4,13 @@ import type { Mutation } from './types'
 
 export function applyMutation<M>(
   fragments: readonly Fragment<M>[],
-  mutation: Mutation,
-  source: readonly Fragment<M>[]
+  mutation: Mutation<M>
 ): Fragment<M>[] {
   const next = [...fragments]
 
   switch (mutation.op) {
     case 'add': {
-      const fragment = source.find((item) => item.id === mutation.fragmentId)
-      if (!fragment) throw new Error(`Cannot replay add for missing fragment "${mutation.fragmentId}"`)
-      next.splice(mutation.index, 0, fragment)
+      next.splice(mutation.index, 0, mutation.fragment)
       return next
     }
     case 'remove': {
@@ -30,9 +27,8 @@ export function applyMutation<M>(
     }
     case 'update': {
       const index = next.findIndex((item) => item.id === mutation.fragmentId)
-      const fragment = source.find((item) => item.id === mutation.fragmentId)
-      if (index < 0 || !fragment) return next
-      next[index] = fragment
+      if (index < 0) return next
+      next[index] = mutation.after
       return next
     }
   }
@@ -48,7 +44,7 @@ export function replayTrace<M>(
   for (const execution of trace.executions) {
     if (execution.passIndex > until) break
     for (const mutation of execution.mutations) {
-      fragments = applyMutation(fragments, mutation, execution.afterFragments)
+      fragments = applyMutation(fragments, mutation)
     }
   }
 
