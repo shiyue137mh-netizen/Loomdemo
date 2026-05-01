@@ -1,1 +1,0 @@
-{"version":3,"file":"serialize.js","sourceRoot":"","sources":["../../src/trace/serialize.ts"],"names":[],"mappings":"AAEA,MAAM,UAAU,cAAc,CAAC,KAAY;IACzC,OAAO,IAAI,CAAC,SAAS,CAAC,KAAK,CAAC,CAAA;AAC9B,CAAC;AAED,MAAM,UAAU,gBAAgB,CAAc,KAAa;IACzD,OAAO,IAAI,CAAC,KAAK,CAAC,KAAK,CAAa,CAAA;AACtC,CAAC"}
