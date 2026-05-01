@@ -1,16 +1,15 @@
 {
-  "name": "loom",
+  "name": "loom-monorepo",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "scripts": {
-    "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "build": "pnpm -r build"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
-    "tsup": "^8.0.0",
+    "@types/node": "^22",
+    "tsx": "^4.21.0",
     "typescript": "5.7.3",
     "vitest": "^4.1.5"
   }

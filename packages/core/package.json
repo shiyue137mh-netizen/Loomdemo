@@ -3,29 +3,21 @@
   "version": "0.1.0",
   "private": false,
   "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./schemas/trace.schema.json": "./dist/schemas/trace.schema.json"
   },
-  "publishConfig": {
-    "main": "./dist/index.js",
-    "types": "./dist/index.d.ts",
-    "exports": {
-      ".": {
-        "import": "./dist/index.js",
-        "types": "./dist/index.d.ts"
-      }
-    }
-  },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --clean",
+    "build": "tsc -p tsconfig.build.json && mkdir -p dist/schemas && cp src/schemas/trace.schema.json dist/schemas/trace.schema.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
-  },
-  "devDependencies": {
-    "tsup": "^8.0.0",
-    "vitest": "^4.0.0"
   }
 }

@@ -1,44 +1,44 @@
-// Types
+export type { Fragment } from './fragment/types'
+export { cloneFragment, cloneFragments } from './fragment/clone'
+export { validateFragments } from './fragment/validate'
+
+export type { Diagnostic, DiagnosticInput, DiagnosticSeverity } from './diagnostic/types'
+
+export type { Mutation } from './mutation/types'
+export { computeMutation, computeMutations } from './mutation/diff'
+export { applyMutation, replayTrace } from './mutation/replay'
+
 export type {
-  // Fragment
-  DataFragment,
-  ResolvedFragment,
-  Content,
-  ResolveContext,
-  // Pass
-  Pass,
-  PassContext,
-  PassLog,
-  // Capability
-  FieldPath,
   Capability,
-  // Scope
-  Scope,
-  // Snapshot
-  PipelineSnapshot,
-  PassTiming,
+  FieldPath,
+  Pass,
+  PassConfig,
+  PassContext,
+  PassFactory,
+} from './pass/types'
+export { factoryDiagnostic, PassRegistry } from './pass/registry'
+
+export type {
   SnapshotMode,
-  // TraceSink
+  Trace,
+  TraceExecution,
+  TraceMode,
+  TraceOptions,
   TraceSink,
-  // Diagnostic
-  Diagnostic,
-  DiagnosticLevel,
-  // Mutation
-  Mutation,
-  // Run
-  RunOptions,
-  PipelineResult,
-} from './types'
+} from './trace/types'
+export { TraceCollector } from './trace/collector'
+export { deserializeTrace, serializeTrace } from './trace/serialize'
 
-// Runtime
-export { pipeline } from './pipeline'
-export { resolveContent, resolveFragments } from './resolution'
-export { computeMutation } from './mutations'
+export { annotateOwners, assertOwnerNotMutated, detectCrossOwnerWrites } from './owner/owner'
 
-// Errors
+export { pipeline } from './pipeline/pipeline'
+export type { Pipeline } from './pipeline/pipeline'
+export { run, runPasses } from './pipeline/runner'
+export type { RunConfig, RunResult } from './pipeline/runner'
 export {
   LoomError,
   PipelineError,
-  PipelineCancelledError,
   PipelineValidationError,
-} from './errors'
+  serializeError,
+} from './pipeline/errors'
+export type { SerializedError } from './pipeline/errors'
