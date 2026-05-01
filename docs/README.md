@@ -8,7 +8,8 @@ Loom 的设计与决策文档库。
 - [ST 宪章 (ST Charter)](./01-foundation/loom-st-charter.md) - `@loom/st` 的开发指导原则与目标。
 
 ## 02. 架构设计 (Architecture)
-- [Studio 架构 (Studio Architecture)](./02-architecture/loom-studio-architecture.md) - Loom Studio (多栈集成工作台) 的详尽架构设计。
+- [Studio 架构 (Studio Architecture)](./02-architecture/loom-studio-architecture.md) - Loom Studio (多栈集成工作台) 的详尽架构设计（Kernel 内部）。
+- [Studio UI (Shell 形态草稿)](./02-architecture/loom-studio-ui.md) - Studio Shell 在用户面前的"骨架形状"：Activity Bar / Side Panel / Canvas / Drawer / Status Bar，以及"桌面优先"立场。
 - [可观测性 (Observability)](./02-architecture/loom-observability.md) - Trace、快照、诊断与可观测性**协议**。
 - [DevTools — 投影虚拟树 (UX 哲学)](./02-architecture/loom-devtools.md) - DevTool 在用户面前**应该长什么样**：平铺底座、投影虚拟树、级联剪枝。
 - [DevTool 分层方案 (Distribution)](./02-architecture/loom-devtool-layered.md) - DevTool 如何**被打包交付**到三层用户：Layer 1（`@loom/core`）/ Layer 2（`@loom/devtool`）/ Layer 3（Studio Extension）。
